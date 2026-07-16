@@ -1,0 +1,272 @@
+{
+  "name": "AI Email Automation Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "d1019139-5afd-4ab4-87ad-fa116c7693b2",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "LqC0jg1GNcI7B8Pu",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputText": "={{ $json.snippet }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "=job",
+              "description": "Emails related to job applications, interview results, offer letters, recruitment, HR communication, hiring updates, resumes, career opportunities."
+            },
+            {
+              "category": "Meeting",
+              "description": "Emails related to meeting invitations, appointment scheduling, calendar events, virtual meeting links, meeting confirmations, rescheduling requests, and discussion agendas."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1.1,
+      "position": [
+        176,
+        0
+      ],
+      "id": "8c81e55f-9fa7-4c61-8ced-ca3e34c821f7",
+      "name": "Text Classifier"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        112,
+        208
+      ],
+      "id": "fae47259-d53f-4df8-bcfc-d942d2ba651b",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "JkgARDCugFmuFEHb",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are my personal Gmail assistant.\n\nRead the email below and generate:\n1. A professional reply subject.\n2. A professional, polite email reply body.\n\nReturn ONLY valid JSON in this format:\n\n{\n  \"subject\": \"Reply subject here\",\n  \"body\": \"Email reply body here\"\n}\n\nEmail:\n{{ $json.snippet }}"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        496,
+        -64
+      ],
+      "id": "60ec8d25-1522-45a4-a5c0-7d8ab3563fd0",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "2jXBmF1JT5gZmogo",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ JSON.parse($('Message a model').item.json.candidates[0].content.parts[0].text).subject }}",
+        "message": "={{ JSON.parse($('Message a model').item.json.candidates[0].content.parts[0].text).body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        848,
+        -64
+      ],
+      "id": "2f85308a-761f-4ce2-94c7-ef208440166f",
+      "name": "Create a draft",
+      "webhookId": "9e542262-9c20-4da9-8a51-d453c7365228",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "LqC0jg1GNcI7B8Pu",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are my personal Gmail assistant.\n\nRead the email below and generate a reply.\n\nReturn ONLY valid JSON.\n\n{\n  \"subject\": \"Reply subject\",\n  \"body\": \"Reply email body\"\n}\n\nDo not write any text before or after the JSON.\nDo not use markdown.\nDo not explain anything.\n\nEmail:\n{{ $json.snippet }}"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        512,
+        128
+      ],
+      "id": "1e555d69-65bd-4d09-ac72-cd5f95371862",
+      "name": "Message a model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "JkgARDCugFmuFEHb",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ $('Gmail Trigger').item.json.Subject }}",
+        "message": "={{ $('Gmail Trigger').item.json.snippet }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        864,
+        128
+      ],
+      "id": "b8a1ef2a-7f92-4e0d-a6e5-27458921e802",
+      "name": "Create a draft1",
+      "webhookId": "1657976d-a4df-4cb2-a689-33f78edaafbc",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "LqC0jg1GNcI7B8Pu",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Classifier": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Message a model1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Create a draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model1": {
+      "main": [
+        [
+          {
+            "node": "Create a draft1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "13eefc66-a61f-401f-8613-134715190a8c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a1c549b7663f53a7f69d9206d9fafbd74847371097e157da3ac1d82431129a95"
+  },
+  "nodeGroups": [],
+  "id": "ScGrLA9yEiErRBL3",
+  "tags": []
+}
